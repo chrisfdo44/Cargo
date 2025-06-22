@@ -1,45 +1,23 @@
+# main.py
 from fastapi import FastAPI, Request
-import json
 from openai import OpenAI
+import os
 
 app = FastAPI()
 
-import os
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 @app.post("/webhook")
-async def webhook(request: Request):
-    body = await request.json()
-    message = body.get("text", "")
-    sender = body.get("sender", "unknown")
-
-    prompt = f"""
-    Extract this cargo enquiry:
-    '{message}'
-    Return JSON like: {{
-      "cargo_type": "", "quantity": "", "origin": "", "destination": "", "laycan": "", "notes": ""
-    }}
-    """
+async def webhook(req: Request):
+    data = await req.json()
+    text = data.get("text")
+    sender = data.get("sender")
 
     try:
-        chat_completion = client.chat.completions.create(
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": text}]
         )
-        response_text = chat_completion.choices[0].message.content
-        try:
-            details = json.loads(response_text)
-        except Exception:
-            return {
-                "error": "Failed to parse OpenAI response",
-                "raw_response": response_text
-            }
-
-        return {
-            "message": message,
-            "sender": sender,
-            "cargo_data": details
-        }
-
+        reply = response.choices[0].message.content
+        return {"reply": reply}
     except Exception as e:
         return {"error": str(e)}
