@@ -23,7 +23,7 @@ async def webhook(request: Request):
 
     try:
         chat_completion = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}]
         )
         response_text = chat_completion.choices[0].message.content
